@@ -1,6 +1,6 @@
 //import { pipeline } from '@huggingface/transformers';
 //import { pipeline } from '@xenova/transformers';
-import { pipeline } from "./trinit";
+import { pipeline as embpipe} from "./trinit";
 
 
 export default {
@@ -9,7 +9,7 @@ export default {
         // Create a feature-extraction pipeline
         // do not use - or other special charcters in model name
         const modelPath = "/models/minilm" // override prefix in trini
-        const extractor = await pipeline('feature-extraction', modelPath);
+        const extractor = await embpipe('feature-extraction', modelPath);
 
         // Compute sentence embeddings
         //const sentences = ['This is an example sentence', 'Each sentence is converted'];
