@@ -1,16 +1,40 @@
-//import { pipeline } from '@huggingface/transformers';
-import { pipeline as asrpipe} from "./asrinit";
+import { pipeline as asrpipe } from "./asrinit";
 
-export default async function asr(file: Blob, lang:string = "en"): Promise<string> {
-    // file is a Blob or File object (e.g. from an <input>)
-    console.log('Loading ASR model...');
-    const modelPath = "/models/whisper" // override prefix init
-    const transcriber = await asrpipe('automatic-speech-recognition', modelPath);
+let transcriber: ((input: any, opts?: any) => Promise<any>) | null = null;
+let currentModelPath: string | null = null;
 
-    // Option 1: use URL.createObjectURL
-    const url = URL.createObjectURL(file);
-    const output = await transcriber(url, { language: lang });
-    URL.revokeObjectURL(url); // Clean up the object URL
-    const text = output && (output as any).text ? (output as any).text : String(output);
-    return text;
+/**
+ * Initialize and persist the ASR transcriber. Subsequent calls reuse the same instance
+ * if the same modelPath is provided.
+ */
+export async function initASR(modelPath: string = "/models/whisper"): Promise<(input: any, opts?: any) => Promise<any>> {
+    if (transcriber && currentModelPath === modelPath) return transcriber;
+    const created = await (asrpipe("automatic-speech-recognition", modelPath) as unknown as Promise<(input: any, opts?: any) => Promise<any>>);
+    transcriber = created;
+    currentModelPath = modelPath;
+    return transcriber;
+}
+
+/**
+ * Transcribe a Blob/File or a string (URL/path). Ensures initASR was called and reuses
+ * the persisted transcriber.
+ */
+export default async function transcribe(file: Blob | string, lang: string = "en"): Promise<string> {
+    if (!transcriber) transcriber = await initASR();
+
+    let input: any = file;
+    let objectUrl: string | null = null;
+
+    if (typeof file !== "string" && file instanceof Blob) {
+        objectUrl = URL.createObjectURL(file);
+        input = objectUrl;
+    }
+
+    try {
+        const output = await transcriber!(input, { language: lang });
+        const text = output && (output as any).text ? (output as any).text : String(output);
+        return text;
+    } finally {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+    }
 }

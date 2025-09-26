@@ -1,5 +1,5 @@
 import './style.css'
-import embed from './tr.ts'
+import embed from './emb.ts'
 import asr from './asr.ts'
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
@@ -14,7 +14,7 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
 `
 document.getElementById('embed')!.onclick = async () => {
   //alert('Button clicked!');
-  const features = await embed.extractFeatures(['This is an example sentence', 'Each sentence is converted']);
+  const features: number[][] = await embed(['This is an example sentence', 'Each sentence is converted']);
   console.log('Number of arrays:', features.length);
   features.forEach((arr, idx) => {
     const mean = arr.reduce((sum:number, val:number) => sum + val, 0) / arr.length;
